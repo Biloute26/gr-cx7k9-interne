@@ -81,7 +81,7 @@
     --hero-edge:#7a6bb0;
   }
   *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:var(--sans);font-size:var(--fs);background:var(--bg);color:var(--ink);line-height:1.55;-webkit-font-smoothing:antialiased;transition:background .3s,color .3s}
+  body{font-family:var(--sans);font-size:var(--fs);font-weight:300;background:var(--bg);color:var(--ink);line-height:1.6;-webkit-font-smoothing:antialiased;transition:background .3s,color .3s}
   button{font-family:inherit;cursor:pointer}
   input,textarea,select{font-family:inherit}
 
@@ -112,8 +112,8 @@
   .logobar img{height:120px;width:auto;max-width:90%;object-fit:contain}
   @media(max-width:600px){.logobar img{height:84px}.logobar{padding:18px 14px 14px}}
   .topbar .brand{font-weight:800;letter-spacing:-.3px;line-height:1.05}
-  .topbar .brand .brand-relais{font-size:26px;font-weight:800;letter-spacing:-.8px;display:block;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.15)}
-  .topbar .brand small{display:block;font-weight:500;font-size:10.5px;color:rgba(255,255,255,.8)}
+  .topbar .brand .brand-relais{font-size:27px;font-weight:300;letter-spacing:-.6px;display:block;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.12)}
+  .topbar .brand small{display:block;font-weight:300;font-size:10.5px;color:rgba(255,255,255,.8)}
   .topbar .spacer{flex:1}
   .sync-pill{display:flex;align-items:center;gap:7px;font-size:12px;color:#fff;padding:6px 11px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.1);border-radius:20px}
   .sync-dot{width:7px;height:7px;border-radius:50%;background:var(--ink-faint)}
@@ -136,8 +136,8 @@
   /* SIDEBAR GAUCHE */
   aside.estabs{grid-row:2;grid-column:1;background:var(--side);border-right:none;padding:20px 14px;display:flex;flex-direction:column;gap:7px;box-shadow:inset -8px 0 24px rgba(0,0,0,.12)}
   aside.estabs .side-head{padding:0 6px 6px;margin-bottom:4px}
-  aside.estabs .side-head h3{font-size:12px;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.7);font-weight:800}
-  .estab-item{display:flex;align-items:center;gap:13px;width:100%;text-align:left;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:12px;padding:18px 16px;color:rgba(255,255,255,.94);font-size:17px;font-weight:500;letter-spacing:-.1px;transition:all .15s}
+  aside.estabs .side-head h3{font-size:12px;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.7);font-weight:500}
+  .estab-item{display:flex;align-items:center;gap:13px;width:100%;text-align:left;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:12px;padding:18px 16px;color:rgba(255,255,255,.94);font-size:17px;font-weight:400;letter-spacing:0;transition:all .15s}
   .estab-item:hover{background:rgba(255,255,255,.16);color:#fff}
   .estab-item.active{background:#fff;color:var(--accent-deep);border-color:#fff;box-shadow:0 4px 14px rgba(0,0,0,.18)}
   .estab-item .dot{width:11px;height:11px;border-radius:50%;background:rgba(255,255,255,.55);flex-shrink:0;transition:background .2s}
@@ -162,33 +162,35 @@
   /* HERO grand en-tête */
   .hero{background:var(--hero);border-bottom:1px solid var(--line);padding:30px 34px 26px;border-left:5px solid var(--hero-edge);position:relative;overflow:hidden}
   .hero::after{content:'';position:absolute;top:-40px;right:-30px;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(200,144,47,.18),transparent 70%);pointer-events:none}
-  .hero .eyebrow{font-size:12px;text-transform:uppercase;letter-spacing:2px;color:var(--accent-deep);font-weight:700;margin-bottom:8px}
-  .hero h1{font-size:42px;font-weight:800;letter-spacing:-1px;line-height:1;margin-bottom:14px}
+  .hero .eyebrow{font-size:12px;text-transform:uppercase;letter-spacing:2px;color:var(--accent-deep);font-weight:500;margin-bottom:8px}
+  .hero h1{font-size:44px;font-weight:300;letter-spacing:-1.2px;line-height:1.02;margin-bottom:14px}
   @media(max-width:600px){.hero h1{font-size:30px}.hero{padding:22px 20px}}
   .hero .who{display:inline-flex;align-items:center;gap:9px;background:var(--surface);border:1px solid var(--line);padding:7px 14px;border-radius:22px;font-size:13px;color:var(--ink-soft)}
   .hero .who b{color:var(--ink)}
   .hero .who .ava{width:24px;height:24px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px}
   .hero .quick{display:flex;gap:18px;margin-top:18px;flex-wrap:wrap}
   .hero .stat{display:flex;flex-direction:column}
-  .hero .stat .n{font-size:24px;font-weight:800;line-height:1}
+  .hero .stat .n{font-size:26px;font-weight:300;line-height:1}
   .hero .stat .l{font-size:12px;color:var(--ink-soft);margin-top:2px}
   .hero .stat.alert .n{color:var(--red)}
   .hero .stat.soon .n{color:var(--amber)}
 
-  nav.tabs{display:flex;gap:2px;padding:12px 22px 0;border-bottom:1px solid var(--line);overflow-x:auto;background:var(--bg)}
-  nav.tabs button{background:none;border:none;color:var(--ink-soft);padding:11px 16px;font-size:14px;font-weight:600;border-bottom:2px solid transparent;white-space:nowrap;display:flex;align-items:center;gap:8px;transition:color .15s}
-  nav.tabs button .count{background:var(--surface-3);color:var(--ink-soft);font-size:11px;padding:1px 8px;border-radius:10px;font-weight:700}
-  nav.tabs button.active{color:var(--ink);border-bottom-color:var(--accent)}
-  nav.tabs button.active .count{background:var(--accent);color:#fff}
-  nav.tabs button .alert-dot{width:8px;height:8px;border-radius:50%;background:var(--red);display:none}
-  nav.tabs button.has-alert .alert-dot{display:inline-block}
+  nav.tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:18px 22px;background:var(--bg)}
+  nav.tabs button{background:var(--surface);border:1.5px solid var(--line);color:var(--ink-soft);padding:15px 14px;font-size:15px;font-weight:400;border-radius:14px;white-space:nowrap;display:flex;align-items:center;justify-content:center;gap:9px;transition:all .18s;box-shadow:var(--shadow)}
+  nav.tabs button:hover{border-color:var(--accent);color:var(--ink);transform:translateY(-1px)}
+  nav.tabs button .count{background:var(--surface-3);color:var(--ink-soft);font-size:12px;padding:2px 9px;border-radius:11px;font-weight:500}
+  nav.tabs button.active{color:#fff;background:var(--accent);border-color:var(--accent);box-shadow:0 4px 14px rgba(0,0,0,.15)}
+  nav.tabs button.active .count{background:rgba(255,255,255,.28);color:#fff}
+  nav.tabs button .alert-dot{width:9px;height:9px;border-radius:50%;background:var(--red);display:none}
+  nav.tabs button.has-alert .alert-dot{display:inline-block;animation:dotBlink 1s ease-in-out infinite}
+  @media(max-width:700px){nav.tabs{grid-template-columns:1fr 1fr}}
 
   .wrap{max-width:1160px;margin:0 auto;padding:24px 22px}
   .panel{display:none}.panel.active{display:block;animation:fade .25s}
   @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
   .section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;gap:12px;flex-wrap:wrap}
-  .section-head h2{font-size:21px;font-weight:800;letter-spacing:-.4px}
-  .btn-primary{background:var(--accent);color:#fff;border:none;padding:10px 17px;border-radius:10px;font-weight:700;font-size:13px;display:inline-flex;align-items:center;gap:6px;transition:background .15s}
+  .section-head h2{font-size:22px;font-weight:300;letter-spacing:-.5px}
+  .btn-primary{background:var(--accent);color:#fff;border:none;padding:10px 17px;border-radius:10px;font-weight:500;font-size:13px;display:inline-flex;align-items:center;gap:6px;transition:background .15s}
   .btn-primary:hover{background:var(--accent-deep)}
   .filters{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
   .chip{background:var(--surface-2);border:1px solid var(--line);color:var(--ink-soft);padding:6px 13px;border-radius:18px;font-size:12px;font-weight:600;transition:all .15s}
@@ -204,7 +206,7 @@
   .tag.fait{background:var(--green-soft);color:var(--green)}
   .prio{font-size:11px;font-weight:700;padding:3px 9px;border-radius:13px;border:1px solid var(--line-strong);color:var(--ink-soft)}
   .author{font-weight:700;color:var(--ink)}
-  .card h3{font-size:16px;margin-bottom:6px;font-weight:700}
+  .card h3{font-size:16px;margin-bottom:6px;font-weight:500}
   .card .body-text{font-size:14px;color:var(--ink);white-space:pre-wrap;word-wrap:break-word;flex:1}
   .card .detail-row{display:flex;gap:14px;flex-wrap:wrap;margin-top:11px;font-size:12.5px;color:var(--ink-soft)}
   .card .detail-row b{color:var(--ink);font-weight:600}
@@ -291,7 +293,7 @@
   .modal{background:var(--surface);border:1px solid var(--line);border-radius:18px 18px 0 0;width:100%;max-width:560px;padding:24px;max-height:92vh;overflow-y:auto;animation:slideup .25s;box-shadow:var(--shadow-lg)}
   @keyframes slideup{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
   @media(min-width:600px){.modal-bg{align-items:center}.modal{border-radius:18px}}
-  .modal h3{font-size:19px;margin-bottom:18px;font-weight:800;letter-spacing:-.3px}
+  .modal h3{font-size:20px;margin-bottom:18px;font-weight:300;letter-spacing:-.4px}
   .field{margin-bottom:14px}
   .field label{display:block;font-size:12px;color:var(--ink-soft);margin-bottom:6px;font-weight:600}
   .field input,.field textarea,.field select{width:100%;padding:12px 14px;border-radius:10px;border:1px solid var(--line-strong);background:var(--surface-2);color:var(--ink);font-size:14px}
@@ -319,6 +321,9 @@
   .pal-dot{width:18px;height:18px;border-radius:50%;flex-shrink:0;box-shadow:inset 0 0 0 1px rgba(0,0,0,.1)}
   .pal-nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .ap-preview{margin-top:14px;padding:14px 16px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2);color:var(--ink);font-size:var(--fs);line-height:1.5}
+  .custom-col{display:flex;align-items:center;gap:12px}
+  .custom-col input[type=color]{width:54px;height:40px;border:1px solid var(--line-strong);border-radius:10px;background:var(--surface-2);cursor:pointer;padding:3px}
+  .cc-hint{font-size:12px;color:var(--ink-soft)}
 </style>
 </head>
 <body>
@@ -472,10 +477,19 @@ const FONTS=[
   {id:'verdana',nom:'Verdana (lisible)',css:'Verdana,Geneva,sans-serif'},
   {id:'mono',nom:'Monospace',css:'ui-monospace,Menlo,Consolas,monospace'}
 ];
-function applyPalette(p){document.documentElement.setAttribute('data-palette',p);localStorage.setItem(LS_THEME,p);}
+function applyPalette(p){document.documentElement.setAttribute('data-palette',p);localStorage.setItem(LS_THEME,p);localStorage.removeItem('relais_customcol');document.documentElement.style.removeProperty('--top');document.documentElement.style.removeProperty('--side');document.documentElement.style.removeProperty('--hero-edge');}
+function hexToRgb(h){h=h.replace('#','');if(h.length===3)h=h.split('').map(c=>c+c).join('');return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)];}
+function darken(hex,f){const[r,g,b]=hexToRgb(hex);const d=v=>Math.max(0,Math.round(v*(1-f)));return 'rgb('+d(r)+','+d(g)+','+d(b)+')';}
+function applyCustomColor(hex){
+  const mid=darken(hex,.18),deep=darken(hex,.4),deepest=darken(hex,.55);
+  document.documentElement.style.setProperty('--top','linear-gradient(100deg,'+hex+','+mid+' 70%,'+deep+')');
+  document.documentElement.style.setProperty('--side','linear-gradient(180deg,'+mid+','+deep+' 60%,'+deepest+')');
+  document.documentElement.style.setProperty('--hero-edge',hex);
+  localStorage.setItem('relais_customcol',hex);
+}
 function applyFont(f){const ff=FONTS.find(x=>x.id===f)||FONTS[0];document.documentElement.style.setProperty('--sans',ff.css);localStorage.setItem('relais_font',f);}
 function applyFontSize(px){document.documentElement.style.setProperty('--fs',px+'px');localStorage.setItem('relais_fs',px);}
-applyPalette(localStorage.getItem(LS_THEME)||'ardoise');
+(function(){const cc=localStorage.getItem('relais_customcol');applyPalette(localStorage.getItem(LS_THEME)||'ardoise');if(cc)applyCustomColor(cc);})();
 applyFont(localStorage.getItem('relais_font')||'inter');
 applyFontSize(localStorage.getItem('relais_fs')||15);
 
@@ -497,14 +511,17 @@ function openThemes(){
   const curS=parseInt(localStorage.getItem('relais_fs')||'15');
   const pal=PALETTES.map(p=>'<button class="pal-swatch'+(p.id===curP?' on':'')+'" onclick="pickPalette(\''+p.id+'\')" title="'+esc(p.nom)+'"><span class="pal-dot" style="background:'+p.dot+'"></span><span class="pal-nm">'+esc(p.nom)+'</span></button>').join('');
   const fonts=FONTS.map(f=>'<option value="'+f.id+'"'+(f.id===curF?' selected':'')+'>'+esc(f.nom)+'</option>').join('');
+  const curCol=localStorage.getItem('relais_customcol')||'#3d4856';
   document.getElementById('modalInner').innerHTML='<h3>Apparence</h3>'+
     '<div class="field"><label>Th\u00e8me de couleur</label><div class="pal-grid">'+pal+'</div></div>'+
+    '<div class="field"><label>Couleur personnalis\u00e9e (barre &amp; menu)</label><div class="custom-col"><input type="color" id="colPick" value="'+curCol+'" oninput="pickCustomColor(this.value)"><span class="cc-hint">Choisis librement la couleur du bandeau et du menu lat\u00e9ral</span></div></div>'+
     '<div class="field"><label>Police</label><select id="fontSel" onchange="pickFont(this.value)">'+fonts+'</select></div>'+
     '<div class="field"><label>Taille du texte : <b id="fsVal">'+curS+' px</b></label><input type="range" id="fsRange" min="12" max="20" step="1" value="'+curS+'" oninput="pickFontSize(this.value)" style="width:100%"></div>'+
     '<div class="ap-preview" id="apPreview">Aper\u00e7u : Relais \u2014 carnet inter-services. Bon d\'intervention, planning, r\u00e9pertoire.</div>'+
     '<div class="modal-actions"><button class="save" onclick="closeModal()">Termin\u00e9</button></div>';
   showModal();
 }
+function pickCustomColor(hex){applyCustomColor(hex);}
 function pickPalette(p){applyPalette(p);document.querySelectorAll('.pal-swatch').forEach(s=>s.classList.remove('on'));const el=[...document.querySelectorAll('.pal-swatch')].find(s=>s.getAttribute('onclick').includes("'"+p+"'"));if(el)el.classList.add('on');}
 function pickFont(f){applyFont(f);}
 function pickFontSize(px){applyFontSize(px);const v=document.getElementById('fsVal');if(v)v.textContent=px+' px';}
