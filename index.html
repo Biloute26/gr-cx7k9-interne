@@ -498,7 +498,24 @@ function tryUnlock(){const v=document.getElementById('gatePass').value.trim();if
 document.getElementById('gatePass').addEventListener('keydown',e=>{if(e.key==='Enter')tryUnlock();});
 if(localStorage.getItem(LS_STAY)==='1')window.addEventListener('DOMContentLoaded',unlock);
 
-function boot(){reflectAdminButtons();startClock();loadWeather();const b=localStorage.getItem(LS_BINID),k=localStorage.getItem(LS_APIKEY);if(!b||!k){openConfig(true);}else{loadFromCloud();startPolling();}}
+function boot(){reflectAdminButtons();startClock();loadWeather();requestNotifPerm();const b=localStorage.getItem(LS_BINID),k=localStorage.getItem(LS_APIKEY);if(!b||!k){openConfig(true);}else{loadFromCloud();startPolling();}}
+let notifiedIds=new Set();let notifFirstLoad=true;
+function requestNotifPerm(){try{if('Notification'in window&&Notification.permission==='default'){Notification.requestPermission();}}catch(e){}}
+function notify(title,body){try{if('Notification'in window&&Notification.permission==='granted'){const n=new Notification(title,{body:body,tag:'relais-'+Date.now()});n.onclick=function(){window.focus();this.close();};}}catch(e){}}
+function checkNotifications(){
+  // messages et réponses récents non encore notifiés (de tous établissements, sauf les miens)
+  DB.estabs.forEach(e=>{
+    const d=DB.data[e.id];if(!d||!d.messages)return;
+    d.messages.forEach(m=>{
+      if(!notifiedIds.has(m.id)){notifiedIds.add(m.id);if(!notifFirstLoad&&m.auteur!==WHO)notify('Nouveau message — '+e.nom,m.auteur+' : '+m.texte.slice(0,80));}
+      (m.replies||[]).forEach(r=>{if(!notifiedIds.has(r.id)){notifiedIds.add(r.id);if(!notifFirstLoad&&r.auteur!==WHO)notify('Réponse — '+e.nom,r.auteur+' : '+r.texte.slice(0,80));}});
+    });
+    // passages en retard du planning
+    (d.prestas||[]).forEach(p=>{const s=prestaStatusFor(p);if(s==='late'){const key='late-'+p.id;if(!notifiedIds.has(key)){notifiedIds.add(key);if(!notifFirstLoad)notify('Passage en retard — '+e.nom,p.nom+' : échéance dépassée');}}});
+  });
+  notifFirstLoad=false;
+}
+function prestaStatusFor(p){const due=nextDue(p);if(!due)return 'ok';const today=new Date();today.setHours(0,0,0,0);const diff=Math.round((due-today)/86400000);if(diff<0)return 'late';if(diff<=SOON_DAYS)return 'soon';return 'ok';}
 function startClock(){function tick(){const d=new Date();const hh=String(d.getHours()).padStart(2,'0'),mm=String(d.getMinutes()).padStart(2,'0');const t=document.getElementById('tiTime');if(t)t.textContent=hh+':'+mm;const ds=d.toLocaleDateString('fr-FR',{weekday:'short',day:'2-digit',month:'short'});const de=document.getElementById('tiDate');if(de)de.textContent=ds;}tick();setInterval(tick,15000);}
 const WMO={0:'☀️',1:'🌤️',2:'⛅',3:'☁️',45:'🌫️',48:'🌫️',51:'🌦️',53:'🌦️',55:'🌧️',61:'🌦️',63:'🌧️',65:'🌧️',71:'🌨️',73:'🌨️',75:'❄️',80:'🌦️',81:'🌧️',82:'⛈️',95:'⛈️',96:'⛈️',99:'⛈️'};
 async function loadWeather(){try{const r=await fetch("https://api.open-meteo.com/v1/forecast?latitude=48.8566&longitude=2.3522&current=temperature_2m,weather_code&timezone=Europe/Paris");const j=await r.json();if(j.current){const t=Math.round(j.current.temperature_2m);const ico=WMO[j.current.weather_code]||'⛅';const wi=document.getElementById('tiWico');const wt=document.getElementById('tiWtemp');if(wi)wi.textContent=ico;if(wt)wt.textContent=t+'°C';}}catch(e){const wt=document.getElementById('tiWtemp');if(wt)wt.textContent='—';}setTimeout(loadWeather,1800000);}
@@ -555,7 +572,7 @@ function binUrl(){return "https://api.jsonbin.io/v3/b/"+localStorage.getItem(LS_
 function ensureSeed(){if(!DB.estabs||!DB.estabs.length){const id=uid();DB.estabs=[{id,nom:"H\u00f4tel Montaigne"}];DB.data={[id]:blankEstab()};}if(!DB.users||!DB.users.length)DB.users=["Service A","Service B","Service C"];if(!CUR||!DB.estabs.find(e=>e.id===CUR)){CUR=DB.estabs[0].id;localStorage.setItem(LS_ESTAB,CUR);}}
 function blankEstab(){return {bons:[],messages:[],contacts:[],prestas:[]};}
 function migrate(rec){if(rec&&(rec.bons||rec.messages||rec.contacts)&&!rec.estabs){const id=uid();return {estabs:[{id,nom:"H\u00f4tel Montaigne"}],users:["Service A","Service B","Service C"],data:{[id]:{bons:rec.bons||[],messages:rec.messages||[],contacts:rec.contacts||[],prestas:[]}}};}return rec||{};}
-async function loadFromCloud(){setSync('busy','Chargement\u2026');try{const r=await fetch(binUrl()+"/latest",{headers:headers()});if(!r.ok)throw new Error(r.status);const j=await r.json();DB=migrate(j.record);if(!DB.estabs)DB.estabs=[];if(!DB.data)DB.data={};if(!DB.users)DB.users=["Service A","Service B","Service C"];Object.keys(DB.data).forEach(k=>{if(!DB.data[k].prestas)DB.data[k].prestas=[];});ensureSeed();initVisits();detectNewMessages();renderAll();setSync('ok','\u00c0 jour');}catch(e){setSync('err','Hors ligne');toast("Lecture impossible \u2014 v\u00e9rifie cl\u00e9 et identifiant.");}}
+async function loadFromCloud(){setSync('busy','Chargement\u2026');try{const r=await fetch(binUrl()+"/latest",{headers:headers()});if(!r.ok)throw new Error(r.status);const j=await r.json();DB=migrate(j.record);if(!DB.estabs)DB.estabs=[];if(!DB.data)DB.data={};if(!DB.users)DB.users=["Service A","Service B","Service C"];Object.keys(DB.data).forEach(k=>{if(!DB.data[k].prestas)DB.data[k].prestas=[];});ensureSeed();initVisits();detectNewMessages();checkNotifications();renderAll();setSync('ok','\u00c0 jour');}catch(e){setSync('err','Hors ligne');toast("Lecture impossible \u2014 v\u00e9rifie cl\u00e9 et identifiant.");}}
 function initVisits(){let changed=false;DB.estabs.forEach(e=>{if(seenVisits[e.id]===undefined){seenVisits[e.id]=Date.now();changed=true;}});if(changed)persistSeen();}
 async function saveToCloud(){if(saving)return;saving=true;setSync('busy','Enregistrement\u2026');try{const r=await fetch(binUrl(),{method:"PUT",headers:headers(),body:JSON.stringify(DB)});if(!r.ok)throw new Error(r.status);setSync('ok','\u00c0 jour');}catch(e){setSync('err','\u00c9chec');toast("Enregistrement impossible.");}saving=false;}
 function startPolling(){if(pollTimer)clearInterval(pollTimer);pollTimer=setInterval(()=>{if(!saving)loadFromCloud();},POLL_MS);}
