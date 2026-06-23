@@ -300,7 +300,7 @@
       <div class="hero">
         <div class="eyebrow">&Eacute;tablissement</div>
         <h1 id="heroName">&mdash;</h1>
-        <div class="who"><span class="ava" id="heroAva">?</span><span>Connect&eacute; : <b id="heroWho">&mdash;</b></span></div>
+        <div class="who"><span class="ava" id="heroAva">?</span><span>Connect&eacute; : <b id="heroWho">&mdash;</b></span></div><div id="presenceLine" style="margin-top:8px;font-size:13px;color:#6b7785;display:flex;align-items:center;gap:6px;flex-wrap:wrap"></div>
         <div class="quick">
           <div class="stat"><span class="n" id="q-bons">0</span><span class="l">bons ouverts</span></div>
           <div class="stat alert"><span class="n" id="q-late">0</span><span class="l">passages en retard</span></div>
@@ -398,7 +398,7 @@ if(localStorage.getItem(LS_STAY)==='1')window.addEventListener('DOMContentLoaded
 
 function boot(){reflectAdminButtons();const b=localStorage.getItem(LS_BINID),k=localStorage.getItem(LS_APIKEY);if(!b||!k){openConfig(true);}else{loadFromCloud();startPolling();}}
 function reflectAdminButtons(){const b=document.getElementById('adminBtn');if(b){b.textContent=isAdmin?'\u{1F513}':'\u{1F512}';}['btnAddEstab','btnManageEstab','btnIntervenants'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display=isAdmin?'':'none';});}
-function setWho(v){WHO=v;localStorage.setItem(LS_WHO,v);renderHero();}
+function setWho(v){WHO=v;localStorage.setItem(LS_WHO,v);renderHero();try{startPresence();}catch(e){}}
 function logout(){localStorage.removeItem(LS_STAY);location.reload();}
 function toggleAdmin(){
   if(isAdmin){ isAdmin=false; sessionStorage.removeItem('relais_admin'); reflectAdmin(); toast("Mode administrateur d\u00e9sactiv\u00e9"); return; }
@@ -418,7 +418,7 @@ function binUrl(){return "https://api.jsonbin.io/v3/b/"+localStorage.getItem(LS_
 function ensureSeed(){if(!DB.estabs||!DB.estabs.length){const id=uid();DB.estabs=[{id,nom:"H\u00f4tel Montaigne"}];DB.data={[id]:blankEstab()};}if(!DB.users||!DB.users.length)DB.users=["Service A","Service B","Service C"];if(!CUR||!DB.estabs.find(e=>e.id===CUR)){CUR=DB.estabs[0].id;localStorage.setItem(LS_ESTAB,CUR);}}
 function blankEstab(){return {bons:[],messages:[],contacts:[],prestas:[]};}
 function migrate(rec){if(rec&&(rec.bons||rec.messages||rec.contacts)&&!rec.estabs){const id=uid();return {estabs:[{id,nom:"H\u00f4tel Montaigne"}],users:["Service A","Service B","Service C"],data:{[id]:{bons:rec.bons||[],messages:rec.messages||[],contacts:rec.contacts||[],prestas:[]}}};}return rec||{};}
-async function loadFromCloud(){setSync('busy','Chargement\u2026');try{const r=await fetch(binUrl()+"/latest",{headers:headers()});if(!r.ok)throw new Error(r.status);const j=await r.json();DB=migrate(j.record);if(!DB.estabs)DB.estabs=[];if(!DB.data)DB.data={};if(!DB.users)DB.users=["Service A","Service B","Service C"];Object.keys(DB.data).forEach(k=>{if(!DB.data[k].prestas)DB.data[k].prestas=[];});cloudLoaded=true;ensureSeed();detectNewMessages();renderAll();setSync('ok','\u00c0 jour');}catch(e){setSync('err','Hors ligne');toast("Lecture impossible \u2014 v\u00e9rifie cl\u00e9 et identifiant.");}}
+async function loadFromCloud(){setSync('busy','Chargement\u2026');try{const r=await fetch(binUrl()+"/latest",{headers:headers()});if(!r.ok)throw new Error(r.status);const j=await r.json();DB=migrate(j.record);if(!DB.estabs)DB.estabs=[];if(!DB.data)DB.data={};if(!DB.users)DB.users=["Service A","Service B","Service C"];Object.keys(DB.data).forEach(k=>{if(!DB.data[k].prestas)DB.data[k].prestas=[];});cloudLoaded=true;ensureSeed();detectNewMessages();renderAll();try{startPresence();}catch(e){}setSync('ok','\u00c0 jour');}catch(e){setSync('err','Hors ligne');toast("Lecture impossible \u2014 v\u00e9rifie cl\u00e9 et identifiant.");}}
 async function saveToCloud(){if(saving)return;
 /* GARDE-FOU anti-ecrasement : ne jamais ecrire tant que le bin distant n'a pas ete charge au moins une fois */
 if(typeof cloudLoaded!=="undefined" && !cloudLoaded){setSync('err','Lecture en cours');toast("Donnees pas encore chargees \u2014 enregistrement bloque par securite.");return;}
@@ -461,9 +461,51 @@ function saveIntervenants(){const old=DB.users.slice();const vals=readIntervenan
 
 function fillWho(){const sel=document.getElementById('whoami');sel.innerHTML='<option value="">\u2014 qui suis-je ?</option>'+DB.users.map(u=>'<option value="'+esc(u)+'">'+esc(u)+'</option>').join('');if(WHO&&DB.users.includes(WHO))sel.value=WHO;else WHO='';}
 
+
+/* ===== Presence temps reel (ajout) ===== */
+var INVISIBLE_NAME="Olivier";        /* Olivier reste invisible aux autres */
+var PRESENCE_TTL=90*1000;            /* considere en ligne si vu il y a moins de 90s */
+var _presenceTimer=null;
+function touchPresence(){
+  if(!WHO) return;
+  if(typeof cloudLoaded!=="undefined" && !cloudLoaded) return;
+  if(!DB.presence) DB.presence={};
+  DB.presence[WHO]=Date.now();
+  /* purge des presences trop vieilles */
+  var now=Date.now();
+  Object.keys(DB.presence).forEach(function(n){ if(now-DB.presence[n]>PRESENCE_TTL*4) delete DB.presence[n]; });
+  saveToCloud();
+  renderPresence();
+}
+function onlineUsers(){
+  if(!DB.presence) return [];
+  var now=Date.now();
+  return Object.keys(DB.presence).filter(function(n){ return (now-DB.presence[n])<PRESENCE_TTL; });
+}
+function renderPresence(){
+  var el=document.getElementById('presenceLine'); if(!el) return;
+  var list=onlineUsers();
+  /* Olivier est invisible : on ne l'affiche jamais dans la liste vue par tous */
+  var visibles=list.filter(function(n){ return n!==INVISIBLE_NAME; });
+  if(!visibles.length){ el.innerHTML='<span style="opacity:.6">Personne d\'autre en ligne</span>'; return; }
+  el.innerHTML='<span style="opacity:.7">En ligne :</span> '+visibles.map(function(n){
+    return '<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:#2e9e5b;display:inline-block"></span>'+n+'</span>';
+  }).join(' &nbsp; ');
+  /* Si c'est Olivier qui regarde, on lui montre discretement qu'il est invisible */
+  if(WHO===INVISIBLE_NAME){ el.innerHTML+=' <span style="margin-left:8px;font-style:italic;opacity:.5">(vous etes invisible)</span>'; }
+}
+function startPresence(){
+  if(_presenceTimer) clearInterval(_presenceTimer);
+  touchPresence();
+  _presenceTimer=setInterval(function(){ touchPresence(); }, 45*1000); /* heartbeat 45s */
+}
+window.addEventListener('beforeunload',function(){
+  try{ if(WHO && DB.presence){ delete DB.presence[WHO]; navigator.sendBeacon && saveToCloud(); } }catch(e){}
+});
+/* ===== fin presence ===== */
 function renderHero(){document.getElementById('heroName').textContent=curName()||'\u2014';document.getElementById('heroWho').textContent=WHO||'\u2014';document.getElementById('heroAva').textContent=(WHO||'?').charAt(0).toUpperCase();const al=planAlerts();document.getElementById('q-bons').textContent=cur().bons.filter(b=>(b.statut||'encours')!=='fait').length;document.getElementById('q-late').textContent=al.late;document.getElementById('q-soon').textContent=al.soon;}
 
-function renderAll(){fillWho();renderEstabs();renderHero();renderBons();renderMsgs();renderContacts();renderPlanning();updateCounts();updateAlert();}
+function renderAll(){fillWho();renderEstabs();renderHero();renderBons();renderMsgs();renderContacts();renderPresence();renderPlanning();updateCounts();updateAlert();}
 function updateCounts(){const c=cur();document.getElementById('cnt-bons').textContent=c.bons.length;document.getElementById('cnt-messages').textContent=c.messages.length;document.getElementById('cnt-repertoire').textContent=c.contacts.length;document.getElementById('cnt-planning').textContent=c.prestas.length;}
 
 /* BONS */
