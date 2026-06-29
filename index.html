@@ -385,7 +385,7 @@ let CUR=localStorage.getItem(LS_ESTAB)||"";
 let bonFilter="all", planFilter="all", planView="year";
 let planYear=new Date().getFullYear(), planMonth=new Date().getMonth();
 let pollTimer=null, saving=false;
-let seenMsgIds=new Set(JSON.parse(localStorage.getItem(LS_SEEN)||"[]"));
+let seenMsgIds=new Set((function(){try{var _v=JSON.parse(localStorage.getItem(LS_SEEN)||"[]");return Array.isArray(_v)?_v:Object.keys(_v||{});}catch(_e){return [];}})());
 
 function applyTheme(t){document.documentElement.setAttribute('data-theme',t);localStorage.setItem(LS_THEME,t);const b=document.getElementById('themeBtn');if(b)b.textContent=t==='dark'?'\u{1F319}':'\u2600\uFE0F';}
 function toggleTheme(){applyTheme(document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark');}
