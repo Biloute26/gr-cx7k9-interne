@@ -373,7 +373,7 @@ const ADMIN_CODE = "lens26";
 let isAdmin = (sessionStorage.getItem('relais_admin')==='1');
 const LS_BINID="relais_binid", LS_APIKEY="relais_apikey", LS_WHO="relais_who",
       LS_STAY="relais_stay", LS_THEME="relais_theme", LS_ESTAB="relais_estab", LS_SEEN="relais_seen_msgs";
-const POLL_MS=15000;
+const POLL_MS=900000;
 const SOON_DAYS=14; // seuil "échéance proche"
 const FREQS={ponctuel:0,mensuel:1,bimestriel:2,trimestriel:3,semestriel:6,annuel:12};
 const FREQ_LABEL={ponctuel:"Ponctuel",mensuel:"Mensuel",bimestriel:"Bimestriel",trimestriel:"Trimestriel",semestriel:"Semestriel",annuel:"Annuel"};
@@ -426,7 +426,7 @@ if(typeof cloudLoaded!=="undefined" && !cloudLoaded){setSync('err','Lecture en c
 try{var _seedLike=(DB.estabs&&DB.estabs.length===1&&/Montaigne/i.test(DB.estabs[0].nom||"")&&Object.values(DB.data||{}).every(function(d){return (!d.bons||!d.bons.length)&&(!d.messages||!d.messages.length)&&(!d.contacts||!d.contacts.length)&&(!d.prestas||!d.prestas.length)}));}catch(_e){var _seedLike=false;}
 if(_seedLike && !window.__allowSeedSave){setSync('err','Bloque (securite)');toast("Ecriture bloquee : la base ressemble a une reinitialisation vide. Vos donnees distantes sont protegees.");return;}
 saving=true;setSync('busy','Enregistrement\u2026');try{const r=await fetch(binUrl(),{method:"PUT",headers:headers(),body:JSON.stringify(DB)});if(!r.ok)throw new Error(r.status);setSync('ok','\u00c0 jour');}catch(e){setSync('err','\u00c9chec');toast("Enregistrement impossible.");}saving=false;}
-function startPolling(){if(pollTimer)clearInterval(pollTimer);pollTimer=setInterval(()=>{if(!saving)loadFromCloud();},POLL_MS);}
+function startPolling(){if(pollTimer)clearInterval(pollTimer);pollTimer=setInterval(()=>{if(!saving&&document.visibilityState==='visible')loadFromCloud();},POLL_MS);}
 function manualSync(){loadFromCloud();}
 function setSync(s,t){const d=document.getElementById('syncDot');d.className='sync-dot'+(s==='ok'?' ok':s==='busy'?' busy':s==='err'?' err':'');document.getElementById('syncTxt').textContent=t;}
 
@@ -497,7 +497,7 @@ function renderPresence(){
 function startPresence(){
   if(_presenceTimer) clearInterval(_presenceTimer);
   touchPresence();
-  _presenceTimer=setInterval(function(){ touchPresence(); }, 45*1000); /* heartbeat 45s */
+  _presenceTimer=setInterval(function(){ if(document.visibilityState==='visible') touchPresence(); }, 900*1000); /* heartbeat 15 min, only when tab visible */
 }
 window.addEventListener('beforeunload',function(){
   try{ if(WHO && DB.presence){ delete DB.presence[WHO]; navigator.sendBeacon && saveToCloud(); } }catch(e){}
