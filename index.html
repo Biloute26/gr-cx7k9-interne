@@ -373,7 +373,7 @@ const ADMIN_CODE = "lens26";
 let isAdmin = (sessionStorage.getItem('relais_admin')==='1');
 const LS_BINID="relais_binid", LS_APIKEY="relais_apikey", LS_WHO="relais_who",
       LS_STAY="relais_stay", LS_THEME="relais_theme", LS_ESTAB="relais_estab", LS_SEEN="relais_seen_msgs";
-const POLL_MS=900000;
+const POLL_MS=3600000;
 const SOON_DAYS=14; // seuil "échéance proche"
 const FREQS={ponctuel:0,mensuel:1,bimestriel:2,trimestriel:3,semestriel:6,annuel:12};
 const FREQ_LABEL={ponctuel:"Ponctuel",mensuel:"Mensuel",bimestriel:"Bimestriel",trimestriel:"Trimestriel",semestriel:"Semestriel",annuel:"Annuel"};
@@ -433,6 +433,9 @@ function setSync(s,t){const d=document.getElementById('syncDot');d.className='sy
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
 function esc(s){return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 function cur(){if(!DB.data[CUR])DB.data[CUR]=blankEstab();if(!DB.data[CUR].prestas)DB.data[CUR].prestas=[];return DB.data[CUR];}
+/* Répertoire COMMUN à tous les établissements : stocké une seule fois dans DB.repertoire.
+   Migration auto : si absent, on récupère les contacts déjà présents dans les établissements (sans doublon). */
+function repertoire(){if(!Array.isArray(DB.repertoire)){DB.repertoire=[];Object.keys(DB.data||{}).forEach(function(k){(DB.data[k].contacts||[]).forEach(function(c){if(!DB.repertoire.some(function(x){return x.id===c.id;}))DB.repertoire.push(c);});});}return DB.repertoire;}
 function curName(){const e=DB.estabs.find(x=>x.id===CUR);return e?e.nom:'';}
 function fmtDate(ts){const d=new Date(ts);return d.toLocaleDateString('fr-FR',{day:'2-digit',month:'short'})+' '+d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});}
 function fmtDay(ts){if(!ts)return '\u2014';const d=new Date(ts);return d.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric'});}
@@ -464,7 +467,7 @@ function fillWho(){const sel=document.getElementById('whoami');sel.innerHTML='<o
 
 /* ===== Presence temps reel (ajout) ===== */
 var INVISIBLE_NAME="Olivier";        /* Olivier reste invisible aux autres */
-var PRESENCE_TTL=90*1000;            /* considere en ligne si vu il y a moins de 90s */
+var PRESENCE_TTL=3900*1000;            /* considere en ligne si vu il y a moins de 65 min (poll 1h) */
 var _presenceTimer=null;
 function touchPresence(){
   if(!WHO) return;
@@ -497,7 +500,7 @@ function renderPresence(){
 function startPresence(){
   if(_presenceTimer) clearInterval(_presenceTimer);
   touchPresence();
-  _presenceTimer=setInterval(function(){ if(document.visibilityState==='visible') touchPresence(); }, 900*1000); /* heartbeat 15 min, only when tab visible */
+  _presenceTimer=setInterval(function(){ if(document.visibilityState==='visible') touchPresence(); }, 3600*1000); /* heartbeat 1 h, only when tab visible */
 }
 window.addEventListener('beforeunload',function(){
   try{ if(WHO && DB.presence){ delete DB.presence[WHO]; navigator.sendBeacon && saveToCloud(); } }catch(e){}
@@ -506,7 +509,7 @@ window.addEventListener('beforeunload',function(){
 function renderHero(){document.getElementById('heroName').textContent=curName()||'\u2014';document.getElementById('heroWho').textContent=WHO||'\u2014';document.getElementById('heroAva').textContent=(WHO||'?').charAt(0).toUpperCase();const al=planAlerts();document.getElementById('q-bons').textContent=cur().bons.filter(b=>(b.statut||'encours')!=='fait').length;document.getElementById('q-late').textContent=al.late;document.getElementById('q-soon').textContent=al.soon;}
 
 function renderAll(){fillWho();renderEstabs();renderHero();renderBons();renderMsgs();renderContacts();renderPresence();renderPlanning();updateCounts();updateAlert();}
-function updateCounts(){const c=cur();document.getElementById('cnt-bons').textContent=c.bons.length;document.getElementById('cnt-messages').textContent=c.messages.length;document.getElementById('cnt-repertoire').textContent=c.contacts.length;document.getElementById('cnt-planning').textContent=c.prestas.length;}
+function updateCounts(){const c=cur();document.getElementById('cnt-bons').textContent=c.bons.length;document.getElementById('cnt-messages').textContent=c.messages.length;document.getElementById('cnt-repertoire').textContent=repertoire().length;document.getElementById('cnt-planning').textContent=c.prestas.length;}
 
 /* BONS */
 function setBonFilter(f){bonFilter=f;document.querySelectorAll('#bons-filters .chip').forEach(c=>c.classList.toggle('on',c.dataset.f===f));renderBons();}
@@ -528,9 +531,9 @@ function markEstabMsgsSeen(){cur().messages.forEach(m=>{seenMsgIds.add(m.id);(m.
 function persistSeen(){localStorage.setItem(LS_SEEN,JSON.stringify([...seenMsgIds]));}
 
 /* CONTACTS */
-function renderContacts(){const box=document.getElementById('list-repertoire');const q=norm(document.getElementById('searchContact').value);let list=cur().contacts.slice();if(q){const terms=q.split(/\s+/).filter(Boolean);list=list.filter(c=>{const hay=norm(c.nom+' '+c.tel+' '+(c.cat||'')+' '+(c.note||''));return terms.every(t=>hay.includes(t));});}list.sort((a,b)=>a.nom.localeCompare(b.nom,'fr'));if(!list.length){box.innerHTML=emptyHTML('\u{1F4C7}',q?'Aucun r\u00e9sultat pour cette recherche.':'Aucun prestataire enregistr\u00e9.');return;}box.innerHTML=list.map(c=>{const tel=(c.tel||'').replace(/\s/g,'');return '<div class="contact-row"><div class="avatar">'+esc((c.nom||'?').charAt(0).toUpperCase())+'</div><div class="info">'+(c.cat?'<div class="cat-chip">'+esc(c.cat)+'</div>':'')+'<div class="name">'+esc(c.nom)+'</div><div class="sub">'+esc(c.tel)+(c.note?' \u00b7 '+esc(c.note):'')+'</div></div><div class="rowbtns">'+(tel?'<a class="call" href="tel:'+esc(tel)+'">Appeler</a>':'')+'<button class="edit" onclick="openContact(\''+c.id+'\')">\u270E Modifier</button></div></div>';}).join('');}
-function openContact(id){const c=id?cur().contacts.find(x=>x.id===id):null;document.getElementById('modalInner').innerHTML='<h3>'+(c?'Modifier le prestataire':'Ajouter un prestataire')+'</h3><div class="field"><label>Nom / soci\u00e9t\u00e9</label><input id="cNom" value="'+(c?esc(c.nom):'')+'" placeholder="Ex : Sanitherm"></div><div class="field-row"><div class="field"><label>T\u00e9l\u00e9phone</label><input id="cTel" value="'+(c?esc(c.tel||''):'')+'" placeholder="01 23 45 67 89" inputmode="tel"></div><div class="field"><label>Cat\u00e9gorie</label><input id="cCat" value="'+(c?esc(c.cat||''):'')+'" placeholder="Plomberie\u2026"></div></div><div class="field"><label>Note (optionnel)</label><input id="cNote" value="'+(c?esc(c.note||''):'')+'" placeholder="Astreinte, n\u00b0 contrat\u2026"></div><div class="modal-actions"><button class="cancel" onclick="closeModal()">Annuler</button>'+(c?'<button class="del-btn" style="flex:.6" onclick="delItem(\'contacts\',\''+c.id+'\')">Supprimer</button>':'')+'<button class="save" onclick="saveContact(\''+(id||'')+'\')">'+(c?'Enregistrer':'Ajouter')+'</button></div>';showModal();}
-function saveContact(id){const n=document.getElementById('cNom').value.trim();if(!n){toast("Nom requis");return;}const p={nom:n,tel:document.getElementById('cTel').value.trim(),cat:document.getElementById('cCat').value.trim(),note:document.getElementById('cNote').value.trim()};if(id){const c=cur().contacts.find(x=>x.id===id);if(c)Object.assign(c,p);}else{cur().contacts.push(Object.assign({id:uid()},p));}closeModal();renderAll();saveToCloud();}
+function renderContacts(){const box=document.getElementById('list-repertoire');const q=norm(document.getElementById('searchContact').value);let list=repertoire().slice();if(q){const terms=q.split(/\s+/).filter(Boolean);list=list.filter(c=>{const hay=norm(c.nom+' '+c.tel+' '+(c.cat||'')+' '+(c.note||''));return terms.every(t=>hay.includes(t));});}list.sort((a,b)=>a.nom.localeCompare(b.nom,'fr'));if(!list.length){box.innerHTML=emptyHTML('\u{1F4C7}',q?'Aucun r\u00e9sultat pour cette recherche.':'Aucun prestataire enregistr\u00e9.');return;}box.innerHTML=list.map(c=>{const tel=(c.tel||'').replace(/\s/g,'');return '<div class="contact-row"><div class="avatar">'+esc((c.nom||'?').charAt(0).toUpperCase())+'</div><div class="info">'+(c.cat?'<div class="cat-chip">'+esc(c.cat)+'</div>':'')+'<div class="name">'+esc(c.nom)+'</div><div class="sub">'+esc(c.tel)+(c.note?' \u00b7 '+esc(c.note):'')+'</div></div><div class="rowbtns">'+(tel?'<a class="call" href="tel:'+esc(tel)+'">Appeler</a>':'')+'<button class="edit" onclick="openContact(\''+c.id+'\')">\u270E Modifier</button></div></div>';}).join('');}
+function openContact(id){const c=id?repertoire().find(x=>x.id===id):null;document.getElementById('modalInner').innerHTML='<h3>'+(c?'Modifier le prestataire':'Ajouter un prestataire')+'</h3><div class="field"><label>Nom / soci\u00e9t\u00e9</label><input id="cNom" value="'+(c?esc(c.nom):'')+'" placeholder="Ex : Sanitherm"></div><div class="field-row"><div class="field"><label>T\u00e9l\u00e9phone</label><input id="cTel" value="'+(c?esc(c.tel||''):'')+'" placeholder="01 23 45 67 89" inputmode="tel"></div><div class="field"><label>Cat\u00e9gorie</label><input id="cCat" value="'+(c?esc(c.cat||''):'')+'" placeholder="Plomberie\u2026"></div></div><div class="field"><label>Note (optionnel)</label><input id="cNote" value="'+(c?esc(c.note||''):'')+'" placeholder="Astreinte, n\u00b0 contrat\u2026"></div><div class="modal-actions"><button class="cancel" onclick="closeModal()">Annuler</button>'+(c?'<button class="del-btn" style="flex:.6" onclick="delItem(\'contacts\',\''+c.id+'\')">Supprimer</button>':'')+'<button class="save" onclick="saveContact(\''+(id||'')+'\')">'+(c?'Enregistrer':'Ajouter')+'</button></div>';showModal();}
+function saveContact(id){const n=document.getElementById('cNom').value.trim();if(!n){toast("Nom requis");return;}const p={nom:n,tel:document.getElementById('cTel').value.trim(),cat:document.getElementById('cCat').value.trim(),note:document.getElementById('cNote').value.trim()};if(id){const c=repertoire().find(x=>x.id===id);if(c)Object.assign(c,p);}else{repertoire().push(Object.assign({id:uid()},p));}closeModal();renderAll();saveToCloud();}
 
 /* ========== PLANNING ========== */
 /* presta = {id,nom,cat,freq,lastDate(ISO ou ''),events:{'YYYY-MM-DD':{type,note,fait:bool}}} */
@@ -619,7 +622,7 @@ function openPresta(id){const p=id?cur().prestas.find(x=>x.id===id):null;documen
 function savePresta(id){const n=document.getElementById('pNom').value.trim();if(!n){toast("Nom requis");return;}const p={nom:n,cat:document.getElementById('pCat').value.trim(),freq:document.getElementById('pFreq').value,lastDate:document.getElementById('pLast').value};if(id){const e=cur().prestas.find(x=>x.id===id);if(e)Object.assign(e,p);}else{cur().prestas.push(Object.assign({id:uid(),events:{}},p));}closeModal();renderAll();saveToCloud();}
 function delPresta(id){cur().prestas=cur().prestas.filter(x=>x.id!==id);closeModal();renderAll();saveToCloud();}
 
-function delItem(type,id){const c=cur();c[type]=c[type].filter(x=>x.id!==id);closeModal();renderAll();saveToCloud();}
+function delItem(type,id){if(type==='contacts'){DB.repertoire=repertoire().filter(x=>x.id!==id);}else{const c=cur();c[type]=c[type].filter(x=>x.id!==id);}closeModal();renderAll();saveToCloud();}
 function emptyHTML(ico,txt){return '<div class="empty"><div class="ico">'+ico+'</div><p>'+txt+'</p></div>';}
 
 function showTab(t){document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.id==='panel-'+t));if(t==='messages')markEstabMsgsSeen();}
