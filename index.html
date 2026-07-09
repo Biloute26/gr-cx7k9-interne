@@ -373,7 +373,6 @@ const ADMIN_CODE = "lens26";
 let isAdmin = (sessionStorage.getItem('relais_admin')==='1');
 const LS_BINID="relais_binid", LS_APIKEY="relais_apikey", LS_WHO="relais_who",
       LS_STAY="relais_stay", LS_THEME="relais_theme", LS_ESTAB="relais_estab", LS_SEEN="relais_seen_msgs";
-const POLL_MS=3600000;
 const SOON_DAYS=14; // seuil "échéance proche"
 const FREQS={ponctuel:0,mensuel:1,bimestriel:2,trimestriel:3,semestriel:6,annuel:12};
 const FREQ_LABEL={ponctuel:"Ponctuel",mensuel:"Mensuel",bimestriel:"Bimestriel",trimestriel:"Trimestriel",semestriel:"Semestriel",annuel:"Annuel"};
@@ -384,7 +383,7 @@ let WHO=localStorage.getItem(LS_WHO)||"";
 let CUR=localStorage.getItem(LS_ESTAB)||"";
 let bonFilter="all", planFilter="all", planView="year";
 let planYear=new Date().getFullYear(), planMonth=new Date().getMonth();
-let pollTimer=null, saving=false;
+let saving=false;
 let seenMsgIds=new Set((function(){try{var _v=JSON.parse(localStorage.getItem(LS_SEEN)||"[]");return Array.isArray(_v)?_v:Object.keys(_v||{});}catch(_e){return [];}})());
 
 function applyTheme(t){document.documentElement.setAttribute('data-theme',t);localStorage.setItem(LS_THEME,t);const b=document.getElementById('themeBtn');if(b)b.textContent=t==='dark'?'\u{1F319}':'\u2600\uFE0F';}
@@ -396,7 +395,7 @@ function tryUnlock(){const v=document.getElementById('gatePass').value.trim();if
 document.getElementById('gatePass').addEventListener('keydown',e=>{if(e.key==='Enter')tryUnlock();});
 if(localStorage.getItem(LS_STAY)==='1')window.addEventListener('DOMContentLoaded',unlock);
 
-function boot(){reflectAdminButtons();const b=localStorage.getItem(LS_BINID),k=localStorage.getItem(LS_APIKEY);if(!b||!k){openConfig(true);}else{loadFromCloud();startPolling();}}
+function boot(){reflectAdminButtons();const b=localStorage.getItem(LS_BINID),k=localStorage.getItem(LS_APIKEY);if(!b||!k){openConfig(true);}else{loadFromCloud();}}
 function reflectAdminButtons(){const b=document.getElementById('adminBtn');if(b){b.textContent=isAdmin?'\u{1F513}':'\u{1F512}';}['btnAddEstab','btnManageEstab','btnIntervenants'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display=isAdmin?'':'none';});}
 function setWho(v){WHO=v;localStorage.setItem(LS_WHO,v);renderHero();try{startPresence();}catch(e){}}
 function logout(){localStorage.removeItem(LS_STAY);location.reload();}
@@ -411,8 +410,8 @@ function requireAdmin(){if(!isAdmin){toast("\u{1F512} R\u00e9serv\u00e9 \u00e0 l
 
 function openConfig(first){first=first||false;if(!first&&!isAdmin){toast('\u{1F512} R\u00e9serv\u00e9 \u00e0 l\'administrateur');return;}const binId=localStorage.getItem(LS_BINID)||"",apiKey=localStorage.getItem(LS_APIKEY)||"";
   document.getElementById('modalInner').innerHTML='<h3>Connexion au carnet partag\u00e9</h3>'+(first?'<p style="color:var(--ink-soft);font-size:13px;margin-bottom:16px">Premi\u00e8re utilisation sur cet appareil. Saisis la cl\u00e9 JSONBin et l\u2019identifiant du carnet (les m\u00eames pour vous trois). Ils restent m\u00e9moris\u00e9s ici, jamais dans le code.</p>':'')+'<div class="field"><label>Cl\u00e9 API JSONBin (X-Master-Key)</label><input id="cfgKey" value="'+apiKey+'" placeholder="$2a$10$..."></div><div class="field"><label>Identifiant du carnet (Bin ID)</label><input id="cfgBin" value="'+binId+'" placeholder="ex : 6a29...0406"></div><div class="modal-actions">'+(first?'':'<button class="cancel" onclick="closeModal()">Annuler</button>')+'<button class="save" onclick="saveConfig()">Connecter</button></div>'+(first?'':'<button class="logout-btn" onclick="logout()">Verrouiller et se d\u00e9connecter</button>');showModal();}
-async function saveConfig(){const key=document.getElementById('cfgKey').value.trim(),bin=document.getElementById('cfgBin').value.trim();if(!key){toast("Cl\u00e9 manquante");return;}localStorage.setItem(LS_APIKEY,key);if(bin){localStorage.setItem(LS_BINID,bin);closeModal();await loadFromCloud();startPolling();}else{closeModal();await createBin(key);}}
-async function createBin(key){setSync('busy','Cr\u00e9ation\u2026');ensureSeed();try{const r=await fetch("https://api.jsonbin.io/v3/b",{method:"POST",headers:{"Content-Type":"application/json","X-Master-Key":key,"X-Bin-Private":"true","X-Bin-Name":"relais-carnet"},body:JSON.stringify(DB)});const j=await r.json();const id=j.metadata&&j.metadata.id;if(id){localStorage.setItem(LS_BINID,id);setSync('ok','Carnet cr\u00e9\u00e9');toast("Carnet cr\u00e9\u00e9. Identifiant : "+id);renderAll();startPolling();}else throw new Error();}catch(e){setSync('err','\u00c9chec');toast("Cr\u00e9ation impossible \u2014 v\u00e9rifie la cl\u00e9.");}}
+async function saveConfig(){const key=document.getElementById('cfgKey').value.trim(),bin=document.getElementById('cfgBin').value.trim();if(!key){toast("Cl\u00e9 manquante");return;}localStorage.setItem(LS_APIKEY,key);if(bin){localStorage.setItem(LS_BINID,bin);closeModal();await loadFromCloud();}else{closeModal();await createBin(key);}}
+async function createBin(key){setSync('busy','Cr\u00e9ation\u2026');ensureSeed();try{const r=await fetch("https://api.jsonbin.io/v3/b",{method:"POST",headers:{"Content-Type":"application/json","X-Master-Key":key,"X-Bin-Private":"true","X-Bin-Name":"relais-carnet"},body:JSON.stringify(DB)});const j=await r.json();const id=j.metadata&&j.metadata.id;if(id){localStorage.setItem(LS_BINID,id);setSync('ok','Carnet cr\u00e9\u00e9');toast("Carnet cr\u00e9\u00e9. Identifiant : "+id);renderAll();}else throw new Error();}catch(e){setSync('err','\u00c9chec');toast("Cr\u00e9ation impossible \u2014 v\u00e9rifie la cl\u00e9.");}}
 function headers(){return {"Content-Type":"application/json","X-Master-Key":localStorage.getItem(LS_APIKEY)};}
 function binUrl(){return "https://api.jsonbin.io/v3/b/"+localStorage.getItem(LS_BINID);}
 function ensureSeed(){if(!DB.estabs||!DB.estabs.length){const id=uid();DB.estabs=[{id,nom:"H\u00f4tel Montaigne"}];DB.data={[id]:blankEstab()};}if(!DB.users||!DB.users.length)DB.users=["Service A","Service B","Service C"];if(!CUR||!DB.estabs.find(e=>e.id===CUR)){CUR=DB.estabs[0].id;localStorage.setItem(LS_ESTAB,CUR);}}
@@ -426,7 +425,6 @@ if(typeof cloudLoaded!=="undefined" && !cloudLoaded){setSync('err','Lecture en c
 try{var _seedLike=(DB.estabs&&DB.estabs.length===1&&/Montaigne/i.test(DB.estabs[0].nom||"")&&Object.values(DB.data||{}).every(function(d){return (!d.bons||!d.bons.length)&&(!d.messages||!d.messages.length)&&(!d.contacts||!d.contacts.length)&&(!d.prestas||!d.prestas.length)}));}catch(_e){var _seedLike=false;}
 if(_seedLike && !window.__allowSeedSave){setSync('err','Bloque (securite)');toast("Ecriture bloquee : la base ressemble a une reinitialisation vide. Vos donnees distantes sont protegees.");return;}
 saving=true;setSync('busy','Enregistrement\u2026');try{const r=await fetch(binUrl(),{method:"PUT",headers:headers(),body:JSON.stringify(DB)});if(!r.ok)throw new Error(r.status);setSync('ok','\u00c0 jour');}catch(e){setSync('err','\u00c9chec');toast("Enregistrement impossible.");}saving=false;}
-function startPolling(){if(pollTimer)clearInterval(pollTimer);pollTimer=setInterval(()=>{if(!saving&&document.visibilityState==='visible')loadFromCloud();},POLL_MS);}
 function manualSync(){loadFromCloud();}
 function setSync(s,t){const d=document.getElementById('syncDot');d.className='sync-dot'+(s==='ok'?' ok':s==='busy'?' busy':s==='err'?' err':'');document.getElementById('syncTxt').textContent=t;}
 
